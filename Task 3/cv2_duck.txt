@@ -1,0 +1,29 @@
+from gym_duckietown.tasks.task_solution import TaskSolution
+import numpy as np
+import cv2
+
+# https://github.com/OSLL/aido-auto-feedback/tree/6d7c1eb9f1b8a50b6c4c4759c1fca527464a947fc7b1c812e5775924/dont_crush_duckie
+
+class DontCrushDuckieTaskSolution(TaskSolution):
+    def __init__(self, generated_task):
+        super().__init__(generated_task)
+
+    def solve(self):
+        env = self.generated_task['env']
+        # getting the initial picture
+        img, _, _, _ = env.step([0,0])
+        
+        condition = True
+        while condition:
+            img, reward, done, info = env.step([1, 0])
+            img = cv2.cvtColor(np.ascontiguousarray(img), cv2.COLOR_BGR2RGB)
+            mask = cv2.inRange(img, (0, 130, 170), (2, 250, 255))
+
+            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+
+            if contours:
+                x, y, w, h = cv2.boundingRect(contours[0])
+                if h > 150:
+                    condition = False
+                    img, reward, done, info = env.step([0, 0])
+            env.render()

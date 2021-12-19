@@ -1,0 +1,51 @@
+from gym_duckietown.tasks.task_solution import TaskSolution
+import numpy as np
+import cv2
+
+# https://github.com/OSLL/aido-auto-feedback/tree/a087893f6650b2e4390312e3e66f04198164aa9ed8213b4b8da2f187/dont_crush_duckie
+
+class DontCrushDuckieTaskSolution(TaskSolution):
+    def __init__(self, generated_task):
+        super().__init__(generated_task)
+
+    def changeLane(self, env, direction):
+        img, _, _, _ = env.step([1, direction * 45])
+        for i in range(8):
+            img, _, _, _ = env.step([1, 0])
+            env.render()
+        img, _, _, _ = env.step([1, -direction * 45])
+
+    def getContours(self, env, img):
+        img = cv2.cvtColor(np.ascontiguousarray(img), cv2.COLOR_BGR2RGB)
+        mask = cv2.inRange(img, (0, 130, 170), (2, 250, 255))
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        return contours
+
+    def isOtherLaneClear(self, env, direction):
+        img, _, _, _ = env.step([0, direction * 45])
+        env.render()
+        isDuckOnOtherLane = self.getContours(env, img)
+        img, _, _, _ = env.step([0, -direction * 45])
+        env.render()
+        return False if isDuckOnOtherLane else True
+
+    def solve(self):
+        env = self.generated_task['env']
+        img, _, _, _ = env.step([0,0])
+        
+        condition = True
+        onSecondLine = False
+        isFirstChange = 0
+        while condition:
+            img, reward, done, info = env.step([1, 0])
+            contours = self.getContours(env, img)
+            if onSecondLine and isFirstChange == 0 and self.isOtherLaneClear(env, -1):
+                isFirstChange = 1
+                self.changeLane(env, -1)
+                onSecondLane = False
+            if contours:
+                x, y, w, h = cv2.boundingRect(contours[0])
+                if h > 80 and not onSecondLine:
+                    self.changeLane(env, 1)
+                    onSecondLine = True
+            env.render()
