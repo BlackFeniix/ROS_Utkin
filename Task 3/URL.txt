@@ -1,0 +1,2 @@
+URl задачи 1 - https://github.com/OSLL/aido-auto-feedback/tree/6d7c1eb9f1b8a50b6c4c4759c1fca527464a947fc7b1c812e5775924/dont_crush_duckie
+URL задачи 2 - ttps://github.com/OSLL/aido-auto-feedback/tree/a087893f6650b2e4390312e3e66f04198164aa9ed8213b4b8da2f187/dont_crush_duckie
